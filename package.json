@@ -29,7 +29,6 @@
     "express": "^5.2.1",
     "imapflow": "^1.6.5",
     "mailparser": "^3.9.14",
-    "mongoose": "^9.7.3",
-    "nodemailer": "^9.0.4"
+    "mongoose": "^9.7.3"
   }
 }

@@ -19,7 +19,7 @@ let reconnecting = false;
 
 
 
-function createClient(){
+function createClient() {
 
     return new ImapFlow({
 
@@ -27,24 +27,21 @@ function createClient(){
 
         port: Number(process.env.IMAP_PORT),
 
-        secure:true,
+        secure: true,
 
 
-        auth:{
-
-            user:process.env.EMAIL,
-
-            pass:process.env.PASSWORD
-
+        auth: {
+            user: process.env.IMAP_EMAIL,
+            pass: process.env.IMAP_PASSWORD
         },
 
 
-        logger:false,
+        logger: false,
 
 
-        tls:{
+        tls: {
 
-            rejectUnauthorized:false
+            rejectUnauthorized: false
 
         }
 
@@ -55,29 +52,29 @@ function createClient(){
 
 
 
-async function connectIMAP(){
+async function connectIMAP() {
 
 
-    if(client){
+    if (client) {
 
-        try{
+        try {
 
             await client.logout();
 
         }
-        catch{}
+        catch { }
 
     }
 
 
 
-    client=createClient();
+    client = createClient();
 
 
 
     client.on(
         "error",
-        (error)=>{
+        (error) => {
 
             console.error(
                 "❌ IMAP Error:",
@@ -91,7 +88,7 @@ async function connectIMAP(){
 
     client.on(
         "close",
-        ()=>{
+        () => {
 
             console.log(
                 "⚠️ IMAP Connection Closed"
@@ -129,22 +126,22 @@ async function connectIMAP(){
 
 
 
-async function reconnect(){
+async function reconnect() {
 
 
-    if(reconnecting)
+    if (reconnecting)
         return;
 
 
-    reconnecting=true;
+    reconnecting = true;
 
 
 
-    try{
+    try {
 
 
         await new Promise(
-            resolve=>setTimeout(resolve,5000)
+            resolve => setTimeout(resolve, 5000)
         );
 
 
@@ -160,7 +157,7 @@ async function reconnect(){
 
     }
 
-    catch(error){
+    catch (error) {
 
 
         console.error(
@@ -172,10 +169,10 @@ async function reconnect(){
     }
 
 
-    finally{
+    finally {
 
 
-        reconnecting=false;
+        reconnecting = false;
 
 
     }
@@ -191,23 +188,23 @@ async function reconnect(){
 
 
 
-async function processEmail(uid){
+async function processEmail(uid) {
 
 
-    try{
+    try {
 
 
         const message =
-        await client.fetchOne(
-            uid,
-            {
-                source:true
-            }
-        );
+            await client.fetchOne(
+                uid,
+                {
+                    source: true
+                }
+            );
 
 
 
-        if(!message){
+        if (!message) {
 
             console.log(
                 "Email not found"
@@ -220,31 +217,31 @@ async function processEmail(uid){
 
 
         const parsed =
-        await simpleParser(
-            message.source
-        );
+            await simpleParser(
+                message.source
+            );
 
 
 
         const from =
-        parsed.from?.value?.[0];
+            parsed.from?.value?.[0];
 
 
 
-        if(!from)
+        if (!from)
             return;
 
 
 
         const senderEmail =
-        from.address
-        .toLowerCase()
-        .trim();
+            from.address
+                .toLowerCase()
+                .trim();
 
 
 
         const senderName =
-        from.name || "User";
+            from.name || "User";
 
 
 
@@ -252,10 +249,10 @@ async function processEmail(uid){
             Prevent Bot Loop
         */
 
-        if(
+        if (
             senderEmail ===
             process.env.EMAIL.toLowerCase()
-        ){
+        ) {
 
             console.log(
                 "Ignoring own email"
@@ -270,12 +267,12 @@ async function processEmail(uid){
 
 
         const subject =
-        parsed.subject || "No Subject";
+            parsed.subject || "No Subject";
 
 
 
         const text =
-        parsed.text || "";
+            parsed.text || "";
 
 
 
@@ -306,13 +303,13 @@ async function processEmail(uid){
 
 
         const exists =
-        await Email.findOne({
-            uid
-        });
+            await Email.findOne({
+                uid
+            });
 
 
 
-        if(exists){
+        if (exists) {
 
 
             console.log(
@@ -335,18 +332,18 @@ async function processEmail(uid){
 
 
         const conversation =
-        await getConversation(
-            senderEmail
-        );
+            await getConversation(
+                senderEmail
+            );
 
 
 
         const history =
-        conversation
-        ?
-        conversation.messages
-        :
-        [];
+            conversation
+                ?
+                conversation.messages
+                :
+                [];
 
 
 
@@ -360,52 +357,52 @@ async function processEmail(uid){
 
 
         const generatedReply =
-        await replyEngine({
+            await replyEngine({
 
-            name:senderName,
+                name: senderName,
 
-            email:senderEmail,
+                email: senderEmail,
 
-            subject,
+                subject,
 
-            message:text,
+                message: text,
 
-            history
+                history
 
-        });
+            });
 
 
 
 
 
         let replySubject =
-        "Re: " + subject;
+            "Re: " + subject;
 
 
-        let replyMessage="";
+        let replyMessage = "";
 
 
 
 
-        if(
+        if (
             typeof generatedReply === "object"
-        ){
+        ) {
 
             replySubject =
-            generatedReply.subject ||
-            replySubject;
+                generatedReply.subject ||
+                replySubject;
 
 
             replyMessage =
-            generatedReply.message || "";
+                generatedReply.message || "";
 
         }
 
-        else{
+        else {
 
 
             replyMessage =
-            String(generatedReply);
+                String(generatedReply);
 
         }
 
@@ -415,7 +412,7 @@ async function processEmail(uid){
 
 
 
-        if(!replyMessage){
+        if (!replyMessage) {
 
 
             console.log(
@@ -440,11 +437,11 @@ async function processEmail(uid){
 
         await sendMail({
 
-            to:senderEmail,
+            to: senderEmail,
 
-            subject:replySubject,
+            subject: replySubject,
 
-            text:replyMessage
+            text: replyMessage
 
         });
 
@@ -469,15 +466,15 @@ async function processEmail(uid){
 
         await saveConversation({
 
-            email:senderEmail,
+            email: senderEmail,
 
-            name:senderName,
+            name: senderName,
 
             subject,
 
-            userMessage:text,
+            userMessage: text,
 
-            botReply:replyMessage
+            botReply: replyMessage
 
         });
 
@@ -496,17 +493,17 @@ async function processEmail(uid){
 
             uid,
 
-            sender:senderEmail,
+            sender: senderEmail,
 
             senderName,
 
             subject,
 
-            message:text,
+            message: text,
 
-            replySent:true,
+            replySent: true,
 
-            reply:replyMessage
+            reply: replyMessage
 
         });
 
@@ -522,7 +519,7 @@ async function processEmail(uid){
     }
 
 
-    catch(error){
+    catch (error) {
 
 
         console.error(
@@ -544,7 +541,7 @@ async function processEmail(uid){
 
 
 
-async function startListener(){
+async function startListener() {
 
 
     await connectIMAP();
@@ -553,7 +550,7 @@ async function startListener(){
 
     client.on(
         "exists",
-        async()=>{
+        async () => {
 
 
             console.log(
@@ -563,27 +560,27 @@ async function startListener(){
 
 
             const lock =
-            await client.getMailboxLock(
-                "INBOX"
-            );
-
-
-
-            try{
-
-
-                const status =
-                await client.status(
-                    "INBOX",
-                    {
-                        uidNext:true
-                    }
+                await client.getMailboxLock(
+                    "INBOX"
                 );
 
 
 
+            try {
+
+
+                const status =
+                    await client.status(
+                        "INBOX",
+                        {
+                            uidNext: true
+                        }
+                    );
+
+
+
                 const uid =
-                status.uidNext - 1;
+                    status.uidNext - 1;
 
 
 
@@ -595,7 +592,7 @@ async function startListener(){
             }
 
 
-            catch(error){
+            catch (error) {
 
 
                 console.error(
@@ -607,7 +604,7 @@ async function startListener(){
             }
 
 
-            finally{
+            finally {
 
 
                 lock.release();
@@ -634,4 +631,4 @@ async function startListener(){
 
 
 module.exports =
-startListener;
+    startListener;

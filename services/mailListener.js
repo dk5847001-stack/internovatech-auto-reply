@@ -13,112 +13,199 @@ const {
 
 
 
-let client;
+let client = null;
+
+let listenerStarted = false;
 
 let reconnecting = false;
 
 
 
-function createClient() {
+
+
+
+
+function createClient(){
+
 
     return new ImapFlow({
 
-        host: process.env.IMAP_HOST,
 
-        port: Number(process.env.IMAP_PORT),
-
-        secure: true,
+        host:
+        process.env.IMAP_HOST,
 
 
-        auth: {
-            user: process.env.IMAP_EMAIL,
-            pass: process.env.IMAP_PASSWORD
+        port:
+        Number(process.env.IMAP_PORT || 993),
+
+
+        secure:true,
+
+
+        auth:{
+
+
+            user:
+            process.env.IMAP_EMAIL,
+
+
+            pass:
+            process.env.IMAP_PASSWORD
+
+
         },
 
 
-        logger: false,
+        maxIdleTime:
+        25 * 60 * 1000,
 
 
-        tls: {
+        logger:false,
 
-            rejectUnauthorized: false
+
+        tls:{
+
+
+            rejectUnauthorized:false
+
 
         }
 
+
     });
+
 
 }
 
 
 
 
-async function connectIMAP() {
 
 
-    if (client) {
 
-        try {
 
-            await client.logout();
+
+async function connectIMAP(){
+
+
+    try{
+
+
+        if(client){
+
+
+            try{
+
+                await client.logout();
+
+            }
+            catch{}
 
         }
-        catch { }
+
+
+
+        client=createClient();
+
+
+
+
+        client.on(
+
+            "error",
+
+            error=>{
+
+
+                console.error(
+
+                    "❌ IMAP Error:",
+
+                    error.message
+
+                );
+
+
+            }
+
+        );
+
+
+
+
+
+        client.on(
+
+            "close",
+
+            ()=>{
+
+
+                console.log(
+
+                    "⚠️ IMAP Connection Closed"
+
+                );
+
+
+                reconnect();
+
+
+            }
+
+        );
+
+
+
+
+
+        await client.connect();
+
+
+
+        console.log(
+
+            "✅ Connected to IMAP Server"
+
+        );
+
+
+
+
+
+        await client.mailboxOpen(
+            "INBOX"
+        );
+
+
+
+        console.log(
+
+            "📩 Inbox Opened"
+
+        );
+
+
 
     }
 
 
-
-    client = createClient();
-
+    catch(error){
 
 
-    client.on(
-        "error",
-        (error) => {
+        console.error(
 
-            console.error(
-                "❌ IMAP Error:",
-                error.message
-            );
+            "❌ IMAP Connection Failed:",
 
-        }
-    );
+            error.message
+
+        );
 
 
-
-    client.on(
-        "close",
-        () => {
-
-            console.log(
-                "⚠️ IMAP Connection Closed"
-            );
+        throw error;
 
 
-            reconnect();
-
-        }
-    );
-
-
-
-    await client.connect();
-
-
-    console.log(
-        "✅ Connected to IMAP Server"
-    );
-
-
-
-    await client.mailboxOpen(
-        "INBOX"
-    );
-
-
-    console.log(
-        "📩 Inbox Opened"
-    );
+    }
 
 
 }
@@ -126,27 +213,38 @@ async function connectIMAP() {
 
 
 
-async function reconnect() {
-
-
-    if (reconnecting)
-        return;
-
-
-    reconnecting = true;
 
 
 
-    try {
+
+
+async function reconnect(){
+
+
+    if(reconnecting)
+    return;
+
+
+
+    reconnecting=true;
+
+
+
+    try{
 
 
         await new Promise(
-            resolve => setTimeout(resolve, 5000)
+
+            resolve=>setTimeout(resolve,5000)
+
         );
 
 
+
         console.log(
+
             "🔄 Reconnecting IMAP..."
+
         );
 
 
@@ -157,22 +255,26 @@ async function reconnect() {
 
     }
 
-    catch (error) {
+
+    catch(error){
 
 
         console.error(
-            "Reconnect Failed:",
+
+            "❌ Reconnect Failed:",
+
             error.message
+
         );
 
 
     }
 
 
-    finally {
+    finally{
 
 
-        reconnecting = false;
+        reconnecting=false;
 
 
     }
@@ -188,136 +290,215 @@ async function reconnect() {
 
 
 
-async function processEmail(uid) {
+async function processEmail(uid){
 
 
-    try {
+
+    try{
+
 
 
         const message =
-            await client.fetchOne(
-                uid,
-                {
-                    source: true
-                }
-            );
+
+        await client.fetchOne(
+
+            uid,
+
+            {
+
+                source:true
+
+            }
+
+        );
 
 
 
-        if (!message) {
+
+        if(!message){
 
             console.log(
-                "Email not found"
+                "⚠️ Email not found"
             );
 
             return;
 
         }
+
+
 
 
 
         const parsed =
-            await simpleParser(
-                message.source
-            );
+
+        await simpleParser(
+
+            message.source
+
+        );
 
 
 
-        const from =
-            parsed.from?.value?.[0];
 
 
 
-        if (!from)
-            return;
+        const sender =
+
+        parsed.from?.value?.[0];
+
+
+
+
+        if(!sender)
+        return;
+
+
+
+
 
 
 
         const senderEmail =
-            from.address
-                .toLowerCase()
-                .trim();
+
+        sender.address
+
+        .toLowerCase()
+
+        .trim();
+
+
+
+
 
 
 
         const senderName =
-            from.name || "User";
+
+        sender.name ||
+
+        "User";
 
 
 
-        /*
-            Prevent Bot Loop
-        */
 
-        if (
+
+
+
+
+        // Ignore own emails
+
+
+        if(
+
             senderEmail ===
-            process.env.EMAIL.toLowerCase()
-        ) {
+
+            process.env.IMAP_EMAIL
+
+            .toLowerCase()
+
+        ){
+
 
             console.log(
-                "Ignoring own email"
+
+                "🤖 Ignoring own email"
+
             );
+
 
             return;
 
+
         }
+
+
+
+
 
 
 
 
 
         const subject =
-            parsed.subject || "No Subject";
+
+        parsed.subject ||
+
+        "No Subject";
+
 
 
 
         const text =
-            parsed.text || "";
+
+        parsed.text ||
+
+        "";
+
+
+
 
 
 
 
         console.log(
+
             "\n📩 New Email"
+
         );
 
 
+
         console.log(
+
             "From:",
+
             senderEmail
+
         );
+
 
 
         console.log(
+
             "Subject:",
+
             subject
+
         );
 
 
 
 
 
-        /*
-            Duplicate Check
-        */
+
+
+
 
 
         const exists =
-            await Email.findOne({
-                uid
-            });
+
+        await Email.findOne({
+
+            uid
+
+        });
 
 
 
-        if (exists) {
+
+
+        if(exists){
 
 
             console.log(
+
                 "⚠️ Already Processed"
+
             );
 
 
             return;
+
 
         }
 
@@ -326,24 +507,27 @@ async function processEmail(uid) {
 
 
 
-        /*
-            Conversation Memory
-        */
+
 
 
         const conversation =
-            await getConversation(
-                senderEmail
-            );
+
+        await getConversation(
+
+            senderEmail
+
+        );
+
 
 
 
         const history =
-            conversation
-                ?
-                conversation.messages
-                :
-                [];
+
+        conversation ?
+
+        conversation.messages :
+
+        [];
 
 
 
@@ -351,32 +535,35 @@ async function processEmail(uid) {
 
 
 
-        /*
-            Generate Reply
-        */
 
 
         const generatedReply =
-            await replyEngine({
 
-                name: senderName,
+        await replyEngine({
 
-                email: senderEmail,
+            name:senderName,
 
-                subject,
+            email:senderEmail,
 
-                message: text,
+            subject,
 
-                history
+            message:text,
 
-            });
+            history
+
+        });
+
+
+
 
 
 
 
 
         let replySubject =
-            "Re: " + subject;
+
+        "Re: " + subject;
+
 
 
         let replyMessage = "";
@@ -384,25 +571,42 @@ async function processEmail(uid) {
 
 
 
-        if (
+
+
+
+        if(
+
             typeof generatedReply === "object"
-        ) {
+
+        ){
+
+
 
             replySubject =
-                generatedReply.subject ||
-                replySubject;
+
+            generatedReply.subject ||
+
+            replySubject;
+
 
 
             replyMessage =
-                generatedReply.message || "";
+
+            generatedReply.message ||
+
+            "";
+
+
 
         }
 
-        else {
+        else{
 
 
             replyMessage =
-                String(generatedReply);
+
+            String(generatedReply || "");
+
 
         }
 
@@ -412,16 +616,19 @@ async function processEmail(uid) {
 
 
 
-        if (!replyMessage) {
+        if(!replyMessage){
 
 
             console.log(
-                "No reply generated"
+
+                "⚠️ No reply generated"
+
             );
 
 
             return;
 
+
         }
 
 
@@ -430,26 +637,28 @@ async function processEmail(uid) {
 
 
 
-        /*
-            Send Reply
-        */
 
 
         await sendMail({
 
-            to: senderEmail,
+            to:senderEmail,
 
-            subject: replySubject,
+            subject:replySubject,
 
-            text: replyMessage
+            text:replyMessage
 
         });
 
 
 
 
+
+
+
         console.log(
+
             "📤 Reply Sent"
+
         );
 
 
@@ -458,23 +667,19 @@ async function processEmail(uid) {
 
 
 
-
-        /*
-            Save Conversation
-        */
 
 
         await saveConversation({
 
-            email: senderEmail,
+            email:senderEmail,
 
-            name: senderName,
+            name:senderName,
 
             subject,
 
-            userMessage: text,
+            userMessage:text,
 
-            botReply: replyMessage
+            botReply:replyMessage
 
         });
 
@@ -484,47 +689,65 @@ async function processEmail(uid) {
 
 
 
-        /*
-            Mark Processed
-        */
 
 
         await Email.create({
 
+
             uid,
 
-            sender: senderEmail,
+
+            sender:senderEmail,
+
 
             senderName,
 
+
             subject,
 
-            message: text,
 
-            replySent: true,
+            message:text,
 
-            reply: replyMessage
+
+            replySent:true,
+
+
+            reply:replyMessage
+
 
         });
+
+
+
+
 
 
 
 
         console.log(
+
             "✅ Email Completed"
+
         );
+
+
 
 
 
     }
 
 
-    catch (error) {
+
+    catch(error){
+
 
 
         console.error(
+
             "❌ Processing Error:",
+
             error.message
+
         );
 
 
@@ -541,70 +764,129 @@ async function processEmail(uid) {
 
 
 
-async function startListener() {
+async function startListener(){
+
+
+
+    if(listenerStarted){
+
+
+        console.log(
+
+            "⚠️ Listener already running"
+
+        );
+
+
+        return;
+
+
+    }
+
 
 
     await connectIMAP();
 
 
 
+
+    listenerStarted=true;
+
+
+
+
+
+
+
     client.on(
+
         "exists",
-        async () => {
+
+        async()=>{
+
 
 
             console.log(
+
                 "📨 New Email Detected"
+
             );
 
 
 
+
+
             const lock =
-                await client.getMailboxLock(
-                    "INBOX"
-                );
+
+            await client.getMailboxLock(
+
+                "INBOX"
+
+            );
 
 
 
-            try {
+
+            try{
+
 
 
                 const status =
-                    await client.status(
-                        "INBOX",
-                        {
-                            uidNext: true
-                        }
-                    );
+
+                await client.status(
+
+                    "INBOX",
+
+                    {
+
+                        messages:true
+
+                    }
+
+                );
+
+
 
 
 
                 const uid =
-                    status.uidNext - 1;
+
+                status.messages;
 
 
 
 
-                await processEmail(uid);
+
+
+                await processEmail(
+
+                    uid
+
+                );
+
+
 
 
 
             }
 
 
-            catch (error) {
+            catch(error){
 
 
                 console.error(
-                    "Listener Error:",
+
+                    "❌ Listener Error:",
+
                     error.message
+
                 );
 
 
             }
 
 
-            finally {
+            finally{
 
 
                 lock.release();
@@ -614,13 +896,20 @@ async function startListener() {
 
 
         }
+
     );
+
+
+
 
 
 
     console.log(
+
         "👂 Listening For Emails..."
+
     );
+
 
 
 }
@@ -630,5 +919,7 @@ async function startListener() {
 
 
 
+
+
 module.exports =
-    startListener;
+startListener;

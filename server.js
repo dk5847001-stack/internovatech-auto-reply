@@ -1,5 +1,6 @@
 require("dotenv").config();
 
+const path = require("path");
 const express = require("express");
 
 const connectDB = require("./config/db");
@@ -14,6 +15,13 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(express.json());
+app.use(
+    "/assets",
+    express.static(path.join(__dirname, "public", "assets"), {
+        immutable: true,
+        maxAge: "7d"
+    })
+);
 
 
 

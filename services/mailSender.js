@@ -3,12 +3,16 @@ const REPLY_TO_EMAIL = "contact@internovatech.in";
 const MAX_RETRIES = 3;
 const REQUEST_TIMEOUT_MS = 30_000;
 const RETRY_STATUSES = new Set([429, 500, 502, 503, 504]);
+
 const PUBLIC_BASE_URL =
     process.env.PUBLIC_BASE_URL ||
     process.env.RENDER_EXTERNAL_URL ||
     (process.env.RENDER_EXTERNAL_HOSTNAME
         ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME}`
         : "");
+
+const WEBSITE_URL = process.env.WEBSITE_URL || "https://www.internovatech.in";
+const CTA_URL = process.env.CTA_URL || WEBSITE_URL;
 
 const LOGO_URL =
     process.env.LOGO_URL ||
@@ -40,6 +44,7 @@ function stripHtml(html = "") {
         .replace(/&gt;/gi, ">")
         .replace(/&quot;/gi, '"')
         .replace(/&#039;/gi, "'")
+        .replace(/&#128640;/g, "")
         .replace(/\n{3,}/g, "\n\n")
         .trim();
 }
@@ -94,30 +99,56 @@ function createTemplate(content) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>InternovaTech Support</title>
 </head>
-<body style="margin:0;padding:0;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;color:#374151;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;background:#f4f7fb;margin:0;padding:0;">
+<body style="margin:0;padding:0;background:#0f1115;font-family:Arial,Helvetica,sans-serif;color:#f3f4f6;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;background:#0f1115;margin:0;padding:0;">
         <tr>
-            <td align="center" style="padding:24px 12px;">
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:620px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 18px 45px rgba(17,24,39,0.14);">
+            <td align="center" style="padding:28px 12px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:620px;background:#111317;border-radius:18px;overflow:hidden;border:1px solid #242832;">
                     <tr>
-                        <td align="center" style="background:#111827;padding:30px 24px 26px;">
-                            <img src="${LOGO_URL}" width="88" height="88" alt="InternovaTech" style="display:block;width:88px;height:88px;border-radius:50%;border:3px solid #374151;">
-                            <h1 style="margin:16px 0 6px;color:#ffffff;font-size:26px;line-height:1.25;font-weight:700;">InternovaTech 🚀</h1>
-                            <p style="margin:0;color:#d1d5db;font-size:14px;line-height:1.5;">AI Support Assistant</p>
+                        <td align="center" style="padding:28px 26px 18px;background:#171a21;">
+                            <img src="${LOGO_URL}" width="76" height="76" alt="InternovaTech" style="display:block;width:76px;height:76px;border-radius:18px;border:1px solid #2f3542;">
+                            <h1 style="margin:14px 0 4px;color:#ffffff;font-size:25px;line-height:1.25;font-weight:700;">InternovaTech &#128640;</h1>
+                            <p style="margin:0;color:#aeb6c4;font-size:14px;line-height:1.5;">AI Support Assistant</p>
                         </td>
                     </tr>
                     <tr>
-                        <td style="padding:32px 30px;color:#374151;font-size:15px;line-height:1.75;">
-                            <p style="margin:0 0 18px;">Hello,</p>
-                            <div style="margin:0 0 26px;">${content}</div>
-                            <p style="margin:0;">Regards,<br><strong>InternovaTech Support Team</strong></p>
+                        <td style="padding:0 26px 24px;background:#171a21;">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;background:#ffffff;border-radius:12px;overflow:hidden;">
+                                <tr>
+                                    <td align="center" style="padding:28px 20px 24px;background:#ffffff;">
+                                        <img src="${LOGO_URL}" width="96" height="96" alt="InternovaTech" style="display:block;width:96px;height:96px;border-radius:22px;">
+                                        <p style="margin:18px 0 6px;color:#111827;font-size:22px;line-height:1.25;font-weight:700;">Smart support for your digital journey</p>
+                                        <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.6;">Web development, automation, AI solutions, and technical assistance from InternovaTech.</p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td align="center" style="padding:16px 18px;background:#ff7a35;color:#ffffff;font-size:18px;line-height:1.35;font-weight:700;">
+                                        Fast response. Clear guidance. Reliable support.
+                                    </td>
+                                </tr>
+                            </table>
                         </td>
                     </tr>
                     <tr>
-                        <td align="center" style="background:#111827;padding:22px 24px;color:#ffffff;font-size:13px;line-height:1.7;">
-                            <strong style="font-size:15px;">InternovaTech</strong><br>
-                            <a href="mailto:info@internovatech.in" style="color:#e5e7eb;text-decoration:none;">info@internovatech.in</a><br>
-                            <a href="https://www.internovatech.in" style="color:#e5e7eb;text-decoration:none;">www.internovatech.in</a>
+                        <td style="padding:4px 30px 30px;color:#e5e7eb;font-size:16px;line-height:1.65;">
+                            <p style="margin:0 0 18px;color:#ffffff;font-size:17px;font-weight:700;">Hello,</p>
+                            <div style="margin:0 0 28px;color:#e5e7eb;">${content}</div>
+                            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;margin:0 0 28px;">
+                                <tr>
+                                    <td align="center">
+                                        <a href="${CTA_URL}" target="_blank" style="display:block;background:#ff7a35;color:#ffffff;text-decoration:none;font-size:16px;font-weight:700;line-height:1;padding:17px 24px;border-radius:9px;">Visit InternovaTech</a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="margin:0;color:#e5e7eb;">Regards,<br><strong style="color:#ffffff;">InternovaTech Support Team</strong></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" style="background:#0b0d10;padding:24px 24px 28px;color:#c9ced8;font-size:13px;line-height:1.8;border-top:1px solid #242832;">
+                            <strong style="font-size:16px;color:#ffffff;">InternovaTech</strong><br>
+                            <a href="mailto:info@internovatech.in" style="color:#d8dce5;text-decoration:none;">info@internovatech.in</a><br>
+                            <a href="${WEBSITE_URL}" style="color:#d8dce5;text-decoration:none;">www.internovatech.in</a>
+                            <p style="margin:18px 0 0;color:#8f98a8;font-size:12px;line-height:1.6;">You are receiving this email because you contacted InternovaTech support.</p>
                         </td>
                     </tr>
                 </table>
@@ -218,7 +249,7 @@ async function sendMail({ to, subject, text, inReplyTo = null }) {
             const result = await parseBrevoResponse(response);
 
             if (response.ok) {
-                console.log("✅ Email Sent", result.messageId || "");
+                console.log("Email Sent", result.messageId || "");
                 return result;
             }
 
@@ -249,7 +280,7 @@ async function sendMail({ to, subject, text, inReplyTo = null }) {
             }
 
             console.error(
-                "❌ Brevo API Error:",
+                "Brevo API Error:",
                 isTimeout ? "Request timed out after 30 seconds" : err.message
             );
             throw err;
